@@ -11,9 +11,10 @@ byte mensagem;
 
 // Constantes
 int led = A5;
+int foto = A3;
 volatile int SENSORES = 2;
 volatile int APAGA_TUDO = 3;
-float rawVal = 0,tempVal1 = 0,rawValT = 0,tenVal = 0,rawValC = 0.0,corVal = 0.0;
+float rawVal = 0,tempVal = 0,rawValT = 0,tenVal = 0,rawValC = 0.0,corVal = 0.0;
 
 //-----------------------------CONFIGURAÇÕES:(LCD,INT0,INT1,I/O)--------------------------------
 void setup()
@@ -47,7 +48,7 @@ void loop()
 //-------------------------SENSORES------------------------------------------
   // Sensor de Temperatura
   rawVal = analogRead(A0);
-  tempVal1 = map(rawVal, 0, 1023, 0, 500);
+  tempVal = map(rawVal, 0, 1023, 0, 500);
 
   // Sensor de Tensão
   rawValT = analogRead(A1);
@@ -62,7 +63,7 @@ void loop()
   lcd.setCursor(0, 1);
   lcd.print("T(C):");
   lcd.setCursor(6, 1);
-  lcd.print(tempVal1);
+  lcd.print(tempVal);
 
   // Display Tensão
   lcd.setCursor(0, 2);
@@ -129,9 +130,13 @@ ISR (SPI_STC_vect)
   {
     received = false;
   }
-  else if (mensagem == 0x20)
+  else if (mensagem == 0x020)
   {
-    
+    SPI_SlaveTransmission(tempVal);
+    SPI_SlaveTransmission(tenVal);
+    SPI_SlaveTransmission(corVal);
+    SPI_SlaveTransmission(digitalRead(foto));
+    SPI_SlaveTransmission(digitalRead(APAGA_TUDO));
   }
 }
 
@@ -142,7 +147,7 @@ byte SPI_SlaveReception()
   return SPDR;
 }
 
-void SPI_SlaveTransmission(byte dado)
+void SPI_SlaveTransmission(float dado)
 {
   SPDR = dado;
 
