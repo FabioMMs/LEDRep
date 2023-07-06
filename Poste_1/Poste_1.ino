@@ -7,6 +7,7 @@ LiquidCrystal lcd(9, 8, 4, 5, 6, 7);
 #include "SPI.h"
 volatile boolean received;
 volatile int Slavereceived;
+byte mensagem;
 
 // Constantes
 int led = A5;
@@ -25,9 +26,8 @@ void setup()
 
   pinMode(MISO, OUTPUT);
   SPCR |= _BV(SPE);
+  SPCR |= _BV(SPIE);
   received = false;
-  SPI.attachInterrupt();
-  delay(100);
 
   attachInterrupt(digitalPinToInterrupt(APAGA_TUDO), interrupcao_button, LOW); // INT 1 (Botão)
   attachInterrupt(digitalPinToInterrupt(SENSORES), interrupcao, CHANGE); //  INT 0  (Sensores)
@@ -37,16 +37,10 @@ void setup()
 
 }
 
-ISR (SPI_STC_vect)
-{
-  Slavereceived = SPDR;
-  received = true;
-}
-
 void loop()
 {
 //--------------RELÉ FOTOELETRICO PARA LIGAR LUZ-----------------------------
-  if((digitalRead(SENSORES) == LOW) && (digitalRead(APAGA_TUDO) == HIGH) && (Slavereceived == 0))
+  if((digitalRead(SENSORES) == LOW) && (digitalRead(APAGA_TUDO) == HIGH) && (received == false))
   {
       digitalWrite(led, HIGH);    
   } 
@@ -120,6 +114,39 @@ void interrupcao_button()
       digitalWrite(led, HIGH); // Ligar o LED (HIGH = nível lógico alto)
       delay(100);
     }
+}
+
+ISR (SPI_STC_vect)
+{
+  mensagem = SPI_SlaveReception();
+
+  if (mensagem == 0x0AB)
+  {
+    received = true;
+    digitalWrite(led, LOW);
+  }
+  else if (mensagem == 0x0CD)
+  {
+    received = false;
+  }
+  else if (mensagem == 0x20)
+  {
+    
+  }
+}
+
+byte SPI_SlaveReception()
+{
+  while (!(SPSR & (1 << SPIF)));
+
+  return SPDR;
+}
+
+void SPI_SlaveTransmission(byte dado)
+{
+  SPDR = dado;
+
+  while(!(SPSR & (1 << SPIF)));
 }
 
   //---------------------INTERRUPÇÃO  DOS SENSORES -------------------------
