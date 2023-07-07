@@ -130,13 +130,18 @@ ISR (SPI_STC_vect)
   {
     received = false;
   }
-  else if (mensagem == 0x020)
+  else if ((mensagem == 0x020) || (mensagem == 0xFF))
   {
     SPI_SlaveTransmission(tempVal);
+    delay(2);
     SPI_SlaveTransmission(tenVal);
+    delay(2);
     SPI_SlaveTransmission(corVal);
-    SPI_SlaveTransmission(digitalRead(foto));
-    SPI_SlaveTransmission(digitalRead(APAGA_TUDO));
+    delay(2);
+    SPI_SlaveTransmission((digitalRead(foto)));
+    delay(2);
+    SPI_SlaveTransmission((digitalRead(APAGA_TUDO)));
+    delay(2);
   }
 }
 
@@ -147,7 +152,7 @@ byte SPI_SlaveReception()
   return SPDR;
 }
 
-void SPI_SlaveTransmission(float dado)
+void SPI_SlaveTransmission(byte dado)
 {
   SPDR = dado;
 

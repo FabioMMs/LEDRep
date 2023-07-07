@@ -3,23 +3,33 @@
 const int rs = 9, en = 8, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(9, 8, 4, 5, 6, 7);
 
-// Bibliotecas e Constantes SPI (Mestre)
+// Biblioteca SPI
 #include "SPI.h"
-const int SS = 10;
+volatile boolean received;
+volatile int Slavereceived;
+byte mensagem;
 
 // Constantes
 int led = A5;
+int foto = A3;
 volatile int SENSORES = 2;
 volatile int APAGA_TUDO = 3;
-float rawVal = 0, tempVal1 = 0, rawValT = 0, tenVal = 0, rawValC = 0.0, corVal = 0.0;
+float rawVal = 0,tempVal = 0,rawValT = 0,tenVal = 0,rawValC = 0.0,corVal = 0.0;
 
 //-----------------------------CONFIGURAÇÕES:(LCD,INT0,INT1,I/O)--------------------------------
 void setup()
 {
+  Serial.begin(19200);
   pinMode(led, OUTPUT); // Configura o pino do led (digital) como saída
   pinMode(APAGA_TUDO, INPUT_PULLUP);
   pinMode(SENSORES, INPUT);
   delay(100);
+
+  pinMode(MISO, OUTPUT);
+  SPCR |= _BV(SPE);
+  SPCR |= _BV(SPIE);
+  received = false;
+
   attachInterrupt(digitalPinToInterrupt(APAGA_TUDO), interrupcao_button, LOW); // INT 1 (Botão)
   attachInterrupt(digitalPinToInterrupt(SENSORES), interrupcao, CHANGE); //  INT 0  (Sensores)
   delay(100);
@@ -28,18 +38,17 @@ void setup()
 
 }
 
-
 void loop()
 {
 //--------------RELÉ FOTOELETRICO PARA LIGAR LUZ-----------------------------
-  if((digitalRead(SENSORES) == LOW) && (digitalRead(APAGA_TUDO) == HIGH))
+  if((digitalRead(SENSORES) == LOW) && (digitalRead(APAGA_TUDO) == HIGH) && (received == false))
   {
       digitalWrite(led, HIGH);    
   } 
 //-------------------------SENSORES------------------------------------------
   // Sensor de Temperatura
   rawVal = analogRead(A0);
-  tempVal1 = map(rawVal, 0, 1023, 0, 500);
+  tempVal = map(rawVal, 0, 1023, 0, 500);
 
   // Sensor de Tensão
   rawValT = analogRead(A1);
@@ -54,7 +63,7 @@ void loop()
   lcd.setCursor(0, 1);
   lcd.print("T(C):");
   lcd.setCursor(6, 1);
-  lcd.print(tempVal1);
+  lcd.print(tempVal);
 
   // Display Tensão
   lcd.setCursor(0, 2);
@@ -70,7 +79,13 @@ void loop()
 
   delay(100);
 
-
+  if(received)
+  {
+    if (Slavereceived == 1)
+    {
+      digitalWrite(led, LOW);
+    }
+  }
 }
 //---------------------------------INTERRUPÇÕES-----------------------------------
 void interrupcao()
@@ -100,6 +115,48 @@ void interrupcao_button()
       digitalWrite(led, HIGH); // Ligar o LED (HIGH = nível lógico alto)
       delay(100);
     }
+}
+
+ISR (SPI_STC_vect)
+{
+  mensagem = SPI_SlaveReception();
+
+  if (mensagem == 0x0AB)
+  {
+    received = true;
+    digitalWrite(led, LOW);
+  }
+  else if (mensagem == 0x0CD)
+  {
+    received = false;
+  }
+  else if ((mensagem == 0x020) || (mensagem == 0xFF))
+  {
+    SPI_SlaveTransmission(tempVal);
+    delay(2);
+    SPI_SlaveTransmission(tenVal);
+    delay(2);
+    SPI_SlaveTransmission(corVal);
+    delay(2);
+    SPI_SlaveTransmission((digitalRead(foto)));
+    delay(2);
+    SPI_SlaveTransmission((digitalRead(APAGA_TUDO)));
+    delay(2);
+  }
+}
+
+byte SPI_SlaveReception()
+{
+  while (!(SPSR & (1 << SPIF)));
+
+  return SPDR;
+}
+
+void SPI_SlaveTransmission(byte dado)
+{
+  SPDR = dado;
+
+  while(!(SPSR & (1 << SPIF)));
 }
 
   //---------------------INTERRUPÇÃO  DOS SENSORES -------------------------
