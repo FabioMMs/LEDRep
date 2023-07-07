@@ -4,14 +4,15 @@ const int rs = 9, en = 8, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(9, 8, 4, 5, 6, 7);
 
 // Biblioteca SPI
-#include "SPI.h"
 volatile boolean received;
 volatile int Slavereceived;
 byte mensagem;
 
 // Constantes
+long int cent;
+long int cem,botVal;
 int led = A5;
-int foto = A3;
+int foto = 0;
 volatile int SENSORES = 2;
 volatile int APAGA_TUDO = 3;
 float rawVal = 0,tempVal = 0,rawValT = 0,tenVal = 0,rawValC = 0.0,corVal = 0.0;
@@ -42,7 +43,7 @@ void loop()
 {
 //--------------RELÉ FOTOELETRICO PARA LIGAR LUZ-----------------------------
   if((digitalRead(SENSORES) == LOW) && (digitalRead(APAGA_TUDO) == HIGH) && (received == false))
-  {
+  { 
       digitalWrite(led, HIGH);    
   } 
 //-------------------------SENSORES------------------------------------------
@@ -70,22 +71,32 @@ void loop()
   lcd.print("T(mV):");
   lcd.setCursor(6, 2);
   lcd.print(tenVal);
+  cem=tenVal*10;
+  cem=(tenVal*10-cem)*100;
 
   // Display Corrente
   lcd.setCursor(0, 3);
   lcd.print("C(A):");
   lcd.setCursor(6, 3);
   lcd.print(corVal);
+  cent=corVal*10;
+  cent=(corVal*10-cent)*100;
 
   delay(100);
+  
+  if(digitalRead(foto)==LOW){
+    botVal=0;
+  }else{
+    botVal=1;
+  }
 
-  if(received)
+/*   if(received)
   {
     if (Slavereceived == 1)
     {
       digitalWrite(led, LOW);
     }
-  }
+  } */
 }
 //---------------------------------INTERRUPÇÕES-----------------------------------
 void interrupcao()
@@ -132,15 +143,19 @@ ISR (SPI_STC_vect)
   }
   else if ((mensagem == 0x020) || (mensagem == 0xFF))
   {
-    SPI_SlaveTransmission(tempVal);
+    SPI_SlaveTransmission(tempVal);//[0]
     delay(2);
-    SPI_SlaveTransmission(tenVal);
+    SPI_SlaveTransmission(tenVal*10);//[1]
     delay(2);
-    SPI_SlaveTransmission(corVal);
+    SPI_SlaveTransmission(cem);//[2]
     delay(2);
-    SPI_SlaveTransmission((digitalRead(foto)));
+    SPI_SlaveTransmission(corVal*10);//[3]
     delay(2);
-    SPI_SlaveTransmission((digitalRead(APAGA_TUDO)));
+    SPI_SlaveTransmission(cent);//[4]
+    delay(2);
+    SPI_SlaveTransmission(botVal);//[5]
+    delay(2);
+    SPI_SlaveTransmission((digitalRead(APAGA_TUDO)));//[6]
     delay(2);
   }
 }
@@ -156,8 +171,6 @@ void SPI_SlaveTransmission(byte dado)
 {
   SPDR = dado;
 
+  delay(10);
   while(!(SPSR & (1 << SPIF)));
 }
-
-  //---------------------INTERRUPÇÃO  DOS SENSORES -------------------------
-
