@@ -44,7 +44,7 @@ void setup()
   digitalWrite(SS3, HIGH);
 
   // Timer
-  Timer1.initialize(1000000);
+  Timer1.initialize(3000000);
   Timer1.attachInterrupt(timerEscape);
 }
 
@@ -131,11 +131,11 @@ void loop()
   Serial.print("BOTAO: ");
   if (botVal == 1)
   {
-    Serial.println("Desligado");
+    Serial.println("Nao Acionado");
   }
   else
   {
-    Serial.println("Ligado");
+    Serial.println("Acionado");
   }
   //POSTE2///
   Serial.print("P2: ");
@@ -148,11 +148,11 @@ void loop()
   Serial.print("BOTAO: ");
   if (botVal2 == 1)
   {
-    Serial.println("Desligado");
+    Serial.println("Nao Acionado");
   }
   else
   {
-    Serial.println("Ligado");
+    Serial.println("Acionado");
   }
   //POSTE3///
   Serial.print("P3: ");
@@ -165,11 +165,11 @@ void loop()
   Serial.print("BOTAO: ");
   if (botVal3 == 1)
   {
-    Serial.println("Desligado");
+    Serial.println("Nao Acionado");
   }
   else
   {
-    Serial.println("Ligado");
+    Serial.println("Acionado");
   }
   Serial.println("");
 }

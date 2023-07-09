@@ -90,13 +90,6 @@ void loop()
     botVal=1;
   }
 
-/*   if(received)
-  {
-    if (Slavereceived == 1)
-    {
-      digitalWrite(led, LOW);
-    }
-  } */
 }
 //---------------------------------INTERRUPÇÕES-----------------------------------
 void interrupcao()
